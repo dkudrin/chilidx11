@@ -1,5 +1,19 @@
 #include <Windows.h>
 
+LRESULT CALLBACK WndProc(
+	HWND hWnd, // handle
+	UINT msg, // number of the message (message Id)
+	WPARAM wParam, // some param (for example - exit code, if msg is WM_QUIT)
+	LPARAM lParam)
+{
+	switch (msg) {
+		case WM_CLOSE:
+			PostQuitMessage(69); // 69 - exit code
+			break;
+	}
+	return DefWindowProc(hWnd, msg, wParam, lParam); // Default window Procedure
+}
+
 int CALLBACK WinMain(
 	HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
@@ -10,9 +24,9 @@ int CALLBACK WinMain(
 	const auto pClassName = "hw3dbutts";
 
 	WNDCLASSEX wc = {0};
-	wc.cbSize = sizeof(WNDCLASS);
+	wc.cbSize = sizeof(wc);
 	wc.style = CS_OWNDC;
-	wc.lpfnWndProc = DefWindowProc;
+	wc.lpfnWndProc = WndProc; // Каждое окно программы будет иметь свой укзатель на процедуру
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
@@ -33,7 +47,7 @@ int CALLBACK WinMain(
 		200, //int x,				// горизонтальная позиция окна
 		200,//int y,				// вертикальная позиция окна
 		640,//int nWidth,			// ширина окна
-		640, //int nHeight,			// высота окна
+		480, //int nHeight,			// высота окна
 		nullptr, //HWND hWndParent,			// дескриптор родительского или окна собственника
 		nullptr, //HMENU hMenu,			// дескриптор меню или идентификатор дочернего окна
 		hInstance, //HINSTANCE hInstance,		// дескриптор экземпляра прикладной программы	
@@ -42,12 +56,26 @@ int CALLBACK WinMain(
 
 	// show window 
 	ShowWindow(hWnd, SW_SHOW);
-	LPMSG lpMsg;
-	GetMessage(
-		lpMsg, // указатель на структуру которая будет наполнена сообщением от Windows по состоянию окна 
-		NULL,
-		
-		);
-	while (true);
-	return 0;
+
+	// message pump
+	MSG msg; // указатель на сообщение с типом данных Структура (в MSDN есть описание полей что в ней храниться https://docs.microsoft.com/en-us/windows/desktop/api/winuser/ns-winuser-tagmsg)
+	BOOL gResult;
+	while ((gResult = GetMessage(
+		&msg, // указатель на структуру которая будет наполнена сообщением от Windows по состоянию окна 
+		nullptr, // указатель на окно от которого получать сообщения, если NULL - тогда он будет получать сообщения от всех окон
+		0, // фильтр типов сообщений которые мы хотим получать
+		0 // тоже фильтр типов сообщений которые мы хотим получать
+	)) > 0)
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+	if (gResult == -1)
+	{
+		return -1;
+	}
+	else
+	{
+		return msg.wParam;
+	}
 }
