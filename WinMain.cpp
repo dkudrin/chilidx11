@@ -7,8 +7,14 @@ LRESULT CALLBACK WndProc(
 	LPARAM lParam)
 {
 	switch (msg) {
-		case WM_CLOSE:
+		case WM_CLOSE: // Google "list of window messages" - wine HQ
 			PostQuitMessage(69); // 69 - exit code
+			break;
+		case WM_KEYDOWN:
+			if (wParam == 'F')
+			{
+				SetWindowTextA(hWnd, "Dkudrin window title");
+			}
 			break;
 	}
 	return DefWindowProc(hWnd, msg, wParam, lParam); // Default window Procedure
