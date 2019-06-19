@@ -1,4 +1,6 @@
 #include <Windows.h>
+#include <string>
+#include <sstream>
 
 LRESULT CALLBACK WndProc(
 	HWND hWnd, // handle
@@ -14,6 +16,21 @@ LRESULT CALLBACK WndProc(
 			if (wParam == 'F')
 			{
 				SetWindowTextA(hWnd, "Dkudrin window title");
+			}
+			break;
+		case WM_CHAR: // Если пришла буква
+			{
+				static std::string title;
+				title.push_back((char)wParam);
+				SetWindowTextA(hWnd, title.c_str());
+			}
+			break;
+		case WM_LBUTTONDOWN: // Нажатие на кнопку "влево"
+			{
+				POINTS pt = MAKEPOINTS(lParam);
+				std::ostringstream oss; // стороковый поток, прожует все что в него положат  ввиде символов
+				oss << "(" << pt.x << "," << pt.y << ")";
+				SetWindowTextA(hWnd, oss.str().c_str());
 			}
 			break;
 	}
