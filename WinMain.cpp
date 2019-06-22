@@ -16,7 +16,11 @@ int CALLBACK WinMain(
 		Window wnd2(400, 100, "Test title2");
 		MSG msg;
 		BOOL gResult;
-		// example of exception throw: throw CHWND_EXCEPT(ERROR_ARENA_TRASHED);
+
+		// Examples of exception throw: 
+		// throw CHWND_EXCEPT(ERROR_ARENA_TRASHED);
+		// throw std::runtime_error("Test error");
+
 		while ((gResult = GetMessage(&msg, nullptr, 0, 0)) > 0)
 		{
 			TranslateMessage(&msg);

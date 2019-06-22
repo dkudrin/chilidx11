@@ -52,6 +52,10 @@ Window::Window(int width, int height, const char* name) noexcept { // конструкто
 	wr.bottom = height + wr.top;
 	DWORD wndStyle = WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU;
 	AdjustWindowRect(&wr, wndStyle, FALSE);
+	//if (FAILED(AdjustWindowRect(&wr, WS_CAPTION | WS_MINIMIZEBOX))))
+	//{
+	//	throw CHWND_LAST_EXCEPT();
+	//}
 	// create window & get hWnd
 	hWnd = CreateWindow(
 		WindowClass::GetName(), // class name
@@ -66,6 +70,10 @@ Window::Window(int width, int height, const char* name) noexcept { // конструкто
 		WindowClass::GetInstance(),
 		this // !!! pointer to our window instance
 	);
+	if (hWnd == nullptr)
+	{
+		throw CHWND_LAST_EXCEPT();
+	}
 	// show window
 	ShowWindow(hWnd, SW_SHOWDEFAULT);
 }
