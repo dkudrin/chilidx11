@@ -1,9 +1,23 @@
 #pragma once
 #include "ChiliWin.h"
 #include <string>
+#include "ChiliException.h"
 
 class Window
 {
+public:
+	class Exception : public ChiliException
+	{
+	public:
+		Exception(int line, const char * file, HRESULT hr);
+		const char * what() const override;
+		const char * GetType() const override;
+		static std::string TranslateErrorCode(HRESULT hr);
+		HRESULT GetErrorCode() const;
+		std::string GetErrorString() const;
+	private:
+		HRESULT hr;
+	};
 private:
 	// singleton manages registration/cleanup of windows class
 	// private nested class
@@ -36,3 +50,6 @@ private:
 	HWND hWnd;
 
 };
+
+// error exception helper macro
+#define CHWND_EXCEPT(hr) Window::Exception(__LINE__, __FILE__, hr)

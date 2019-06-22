@@ -1,4 +1,5 @@
 #include "Window.h"
+#include <sstream>
 
 // Window Class Stuff
 Window::WindowClass Window::WindowClass::wndClass;
@@ -79,8 +80,8 @@ LRESULT WINAPI Window::HandleMsgSetup(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 	// use create parameter passed in form CreateWindow() to store window class pointer
 	if (msg = WM_NCCREATE) // WM_NCCREATE посылаетс€ до событи€ WM_CREATE в момент первичного создани€ окна
 		// wParam - не используетс€
-		// lParam - указатель на CREATESTRUCT структуру, котора€ содержит информацию об окне которой будет созданы
-		// „лены структуры CREATESTRUCT идентичны параметрам которые принимает функци€ CreateWindowEx!!!
+		// lParam - указатель на CREATESTRUCTW структуру, котора€ содержит информацию об окне которой будет создано
+		// „лены структуры CREATESTRUCTW идентичны параметрам которые принимает функци€ CreateWindowEx!!!
 		// https://docs.microsoft.com/ru-ru/previous-versions/9930zz74(v=vs.120)
 		// ќсобо интересен первый параметр
 		// lpCreateParams - ”казывает на данные, используемые дл€ создани€ окна.
@@ -121,4 +122,60 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noe
 		return 0;
 	}
 	return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+// Window Exception Stuff
+Window::Exception::Exception(int line, const char * file, HRESULT hr) // Derived class constructor
+	:
+	ChiliException(line, file), // call base counstructor class
+	hr(hr) // set priveate var hr
+{}
+
+const char * Window::Exception::what() const
+{
+	std::ostringstream oss;
+	oss << GetType() << std::endl
+		<< "[Error Code] " << GetErrorCode() << std::endl
+		<< "[Description]" << GetErrorString() << std::endl
+		<< GetOriginString();
+	whatBuffer = oss.str();
+	return whatBuffer.c_str();
+}
+
+const char * Window::Exception::GetType() const
+{
+	return "Chili Widndow Eception";
+}
+
+std::string Window::Exception::TranslateErrorCode(HRESULT hr)
+{
+	char * pMsgBuf = nullptr;
+	DWORD nMsgLen = FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		FORMAT_MESSAGE_FROM_SYSTEM |
+		FORMAT_MESSAGE_IGNORE_INSERTS,
+		nullptr,
+		hr,
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		reinterpret_cast<LPSTR>(&pMsgBuf),
+		0,
+		nullptr
+	);
+	if (nMsgLen == 0)
+	{
+		return "Unidentified error code";
+	}
+	std::string errorString = pMsgBuf;
+	LocalFree(pMsgBuf);
+	return errorString;
+}
+
+HRESULT Window::Exception::GetErrorCode() const
+{
+	return hr;
+}
+
+std::string Window::Exception::GetErrorString() const
+{
+	return TranslateErrorCode(hr);
 }
