@@ -17,6 +17,8 @@ public:
 			WheelUp,
 			WheelDown,
 			Move,
+			Enter,
+			Leave,
 			Invalid
 		};
 	private:
@@ -77,6 +79,7 @@ public:
 	std::pair<int, int> GetPos() const;
 	int GetPosX() const;
 	int GetPosY() const;
+	bool IsInWindow() const;
 	bool LeftIsPressed() const;
 	bool RightIsPressed() const;
 	Mouse::Event Read();
@@ -87,6 +90,8 @@ public:
 	void Flush();
 private:
 	void OnMouseMove(int x, int y);
+	void OnMouseLeave();
+	void OnMouseEnter();
 	void OnLeftPressed(int x, int y);
 	void OnLeftReleased(int x, int y);
 	void OnRightPressed(int x, int y);
@@ -94,12 +99,15 @@ private:
 	void OnWheelUp(int x, int y);
 	void OnWheelDown(int x, int y);
 	void TrimBuffer();
+	void OnWheelDelta(int x, int y, int delta);
 private:
 	static constexpr unsigned int bufferSize = 16u;
 	int x;
 	int y;
 	bool leftIsPressed = false;
 	bool rightIsPressed = true;
+	bool isInWindow = false;
+	int wheelDeltaCarry = 0;
 	std::queue<Event> buffer;
 };
 

@@ -1,4 +1,5 @@
 #include "Mouse.h"
+#include <Windows.h>
 
 std::pair<int, int> Mouse::GetPos() const
 {
@@ -52,6 +53,20 @@ void Mouse::OnMouseMove(int newx, int newy) {
 	TrimBuffer();
 }
 
+void Mouse::OnMouseLeave()
+{
+	isInWindow = false;
+	buffer.push(Mouse::Event(Mouse::Event::Type::Leave, *this));
+	TrimBuffer;
+}
+
+void Mouse::OnMouseEnter()
+{
+	isInWindow = true;
+	buffer.push(Mouse::Event(Mouse::Event::Type::Enter, *this));
+	TrimBuffer;
+}
+
 void Mouse::OnLeftPressed(int x, int y)
 {
 	leftIsPressed = true;
@@ -97,5 +112,21 @@ void Mouse::TrimBuffer()
 	while (buffer.size() > bufferSize)
 	{
 		buffer.pop();
+	}
+}
+
+void Mouse::OnWheelDelta(int x, int y, int delta)
+{
+	wheelDeltaCarry += delta;
+	// generate evetns for every 120
+	while (wheelDeltaCarry >= WHEEL_DELTA)
+	{
+		wheelDeltaCarry -= WHEEL_DELTA;
+		OnWheelUp(x, y);
+	}
+	while (wheelDeltaCarry <= -WHEEL_DELTA)
+	{
+		wheelDeltaCarry += WHEEL_DELTA;
+		OnWheelDown(x, y);
 	}
 }
