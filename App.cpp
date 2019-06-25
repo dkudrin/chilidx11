@@ -9,25 +9,16 @@ App::App()
 
 int App::Go()
 {
-	MSG msg;
-	BOOL gResult;
 	while (true)
 	{
-		// Translate will post auxilliary WM_CHAR messages from msgs
-		if ((gResult = GetMessage(&msg, nullptr, 0, 0)) > 0)
+		// process all messages pending, but to not block
+		if (const auto ecode = Window::ProcessMessages())
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			// if return optional has value, means we're return exit code
+			return *ecode;
 		}
 		DoFrame();
 	}
-	// chaeck if GetMessage call itself borked
-	if (gResult == -1)
-	{
-		throw CHWND_LAST_EXCEPT();
-	}
-	// wParam here is the value passed to PostQuitMessage
-	return msg.wParam;
 }
 
 void App::DoFrame()

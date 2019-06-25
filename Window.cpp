@@ -283,3 +283,18 @@ void Window::SetTitle(const std::string& title)
 		throw CHWND_LAST_EXCEPT();
 	}
 }
+
+std::optional<int> Window::ProcessMessages()
+{
+	MSG msg;
+	while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+	{
+		if (msg.message == WM_QUIT)
+		{
+			return msg.wParam;
+		}
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+	return {};
+}
