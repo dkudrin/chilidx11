@@ -28,6 +28,16 @@ int CALLBACK WinMain(
 			{
 				MessageBox(nullptr, "Something Happon!", "ALT is pressed", MB_OKCANCEL);
 			}
+			while (!wnd.mouse.IsEmpty())
+			{
+				const auto e = wnd.mouse.Read();
+				if (e.GetType() == Mouse::Event::Type::Move)
+				{
+					std::ostringstream oss;
+					oss << "Mouse Position: (" << e.GetPosX() << ", " << e.GetPosY() << ")";
+					wnd.SetTitle(oss.str());
+				}
+			}
 		}
 
 		if (gResult == -1)

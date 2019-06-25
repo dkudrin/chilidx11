@@ -3,6 +3,7 @@
 #include <string>
 #include "ChiliException.h"
 #include "KeyBoard.h"
+#include "Mouse.h"
 
 class Window
 {
@@ -51,6 +52,7 @@ private:
 	// - поэтому для него используются static callback-и которые не имеют скрытых параметров
 public:
 	KeyBoard kbd;
+	Mouse mouse;
 private:
 	int width;
 	int height;
