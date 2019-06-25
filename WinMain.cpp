@@ -8,16 +8,15 @@ int CALLBACK WinMain(
 	HINSTANCE hInstance,
 	HINSTANCE hPrevInstance,
 	LPSTR     lpCmdLine,
-	int       nShowCmd) 
+	int       nShowCmd)
 {
 	try
 	{
 		Window wnd(800, 300, "Test title");
-		Window wnd2(400, 100, "Test title2");
 		MSG msg;
 		BOOL gResult;
 
-		// Examples of exception throw: 
+		// Examples of exception throw:
 		// throw CHWND_EXCEPT(ERROR_ARENA_TRASHED);
 		// throw std::runtime_error("Test error");
 
@@ -25,6 +24,10 @@ int CALLBACK WinMain(
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
+			if (wnd.kbd.KeyIsPressed(VK_SPACE))
+			{
+				MessageBox(nullptr, "Something Happon!", "Space Key is pressed", MB_OKCANCEL);
+			}
 		}
 
 		if (gResult == -1)

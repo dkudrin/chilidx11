@@ -5,7 +5,7 @@
 // Window Class Stuff
 Window::WindowClass Window::WindowClass::wndClass;
 
-Window::WindowClass::WindowClass() noexcept // конструктор
+Window::WindowClass::WindowClass() // конструктор
 	:
 	hInst(GetModuleHandle(nullptr)) // initialization list - список инициализаций полей значениями до конструктора
 									// GetModuleHandle -  получение hadle от instance окна
@@ -33,18 +33,22 @@ Window::WindowClass::~WindowClass() // деструктор
 	UnregisterClass(wndClassName, GetInstance()); // Разрегистрация инстанса окна
 }
 
-const char * Window::WindowClass::GetName() noexcept
+const char * Window::WindowClass::GetName()
 {
 	return wndClassName; // возавращает имя окна
 }
 
-HINSTANCE Window::WindowClass::GetInstance() noexcept
+HINSTANCE Window::WindowClass::GetInstance()
 {
 	return wndClass.hInst; // Возвращает просто инстанс окна
 }
 
 // Window
-Window::Window(int width, int height, const char* name) noexcept { // конструктор окна
+Window::Window(int width, int height, const char* name)
+	:
+	width(width),
+	height(height)
+{ // конструктор окна
 	// calculate window size based on desired client region size
 	RECT wr;
 	wr.left = 100;
@@ -52,11 +56,12 @@ Window::Window(int width, int height, const char* name) noexcept { // конструкто
 	wr.top = 100;
 	wr.bottom = height + wr.top;
 	DWORD wndStyle = WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU;
-	AdjustWindowRect(&wr, wndStyle, FALSE);
-	//if (FAILED(AdjustWindowRect(&wr, WS_CAPTION | WS_MINIMIZEBOX))))
-	//{
-	//	throw CHWND_LAST_EXCEPT();
-	//}
+	if (AdjustWindowRect(&wr, wndStyle, FALSE) == 0)
+	{
+		throw CHWND_LAST_EXCEPT();
+	}
+	this;
+	HINSTANCE wndClassInstance = WindowClass::GetInstance();
 	// create window & get hWnd
 	hWnd = CreateWindow(
 		WindowClass::GetName(), // class name
@@ -68,7 +73,7 @@ Window::Window(int width, int height, const char* name) noexcept { // конструкто
 		wr.bottom - wr.top,
 		nullptr,
 		nullptr,
-		WindowClass::GetInstance(),
+		wndClassInstance,
 		this // !!! pointer to our window instance
 	);
 	if (hWnd == nullptr)
@@ -84,10 +89,10 @@ Window::~Window()
 	DestroyWindow(hWnd);
 }
 
-LRESULT WINAPI Window::HandleMsgSetup(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept
+LRESULT WINAPI Window::HandleMsgSetup(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	// use create parameter passed in form CreateWindow() to store window class pointer
-	if (msg = WM_NCCREATE) // WM_NCCREATE посылается до события WM_CREATE в момент первичного создания окна
+	if (msg == WM_NCCREATE) // WM_NCCREATE посылается до события WM_CREATE в момент первичного создания окна
 		// wParam - не используется
 		// lParam - указатель на CREATESTRUCTW структуру, которая содержит информацию об окне которой будет создано
 		// Члены структуры CREATESTRUCTW идентичны параметрам которые принимает функция CreateWindowEx!!!
@@ -95,12 +100,12 @@ LRESULT WINAPI Window::HandleMsgSetup(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 		// Особо интересен первый параметр
 		// lpCreateParams - Указывает на данные, используемые для создания окна.
 		// В нашем случае - это тот самый "this" который мы передали последним параметром
-		// при вызове CreateWindow - это указатель на 
+		// при вызове CreateWindow - это указатель на
 	{
 		// extract ptr to window class from creation data
 		const CREATESTRUCTW * const pCreate = reinterpret_cast<CREATESTRUCTW*>(lParam);
 		Window* const pWnd = static_cast<Window*>(pCreate->lpCreateParams);
-		// SetWindowLongPtr - WinAPI function 
+		// SetWindowLongPtr - WinAPI function
 		SetWindowLongPtr(
 			hWnd,
 			GWLP_USERDATA,
@@ -114,7 +119,7 @@ LRESULT WINAPI Window::HandleMsgSetup(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-LRESULT WINAPI Window::HandleMsgThunk(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept
+LRESULT WINAPI Window::HandleMsgThunk(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	// retrieve ptr to window class
 	Window* const pWnd = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
@@ -122,13 +127,23 @@ LRESULT WINAPI Window::HandleMsgThunk(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 	return pWnd->HandleMsg(hWnd, msg, wParam, lParam);
 }
 
-LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept
+LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
 	{
 	case WM_CLOSE:
 		PostQuitMessage(0);
 		return 0;
+	/******************** KEYBOARD MESSAGES *************************/
+	case WM_KEYDOWN:
+		kbd.OnKeyPressed(static_cast<unsigned char>(wParam));
+		break;
+	case WM_KEYUP:
+		kbd.OnKeyReleased(static_cast<unsigned char>(wParam));
+	case WM_CHAR:
+		kbd.OnChar(static_cast<unsigned char>(wParam));
+		break;
+	/******************** END KEYBOARD MESSAGES *************************/
 	}
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
@@ -187,4 +202,12 @@ HRESULT Window::Exception::GetErrorCode() const
 std::string Window::Exception::GetErrorString() const
 {
 	return TranslateErrorCode(hr);
+}
+
+void Window::SetTitle(const std::string& title)
+{
+	if (SetWindowText(hWnd, title.c_str()) == 0)
+	{
+		throw CHWND_LAST_EXCEPT();
+	}
 }

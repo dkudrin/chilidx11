@@ -2,6 +2,7 @@
 #include "ChiliWin.h"
 #include <string>
 #include "ChiliException.h"
+#include "KeyBoard.h"
 
 class Window
 {
@@ -24,11 +25,11 @@ private:
 	class WindowClass
 	{
 	public:
-		static const char * GetName() noexcept;
-		static HINSTANCE GetInstance() noexcept;
+		static const char * GetName();
+		static HINSTANCE GetInstance();
 	private:
-		WindowClass() noexcept;
-		~WindowClass() noexcept;
+		WindowClass();
+		~WindowClass();
 		WindowClass(const WindowClass&) = delete;
 		WindowClass& operator=(const WindowClass&) = delete;
 		static constexpr const char* wndClassName = "Dkudrin Direct3D Engine Window";
@@ -36,19 +37,24 @@ private:
 		HINSTANCE hInst;
 	};
 public:
-	Window(int width, int height, const char * name) noexcept; // creates window
+	Window(int width, int height, const char * name); // creates window
 	~Window(); // destroyes window
 	Window(const Window&) = delete;
 	Window& operator=(const Window&) = delete;
+	void SetTitle(const std::string& title);
 private:
-	static LRESULT CALLBACK HandleMsgSetup(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept;
-	static LRESULT CALLBACK HandleMsgThunk(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept;
-	LRESULT HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) noexcept;
+	static LRESULT CALLBACK HandleMsgSetup(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	static LRESULT CALLBACK HandleMsgThunk(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	LRESULT HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	// member functions принимают как Hidden параметр ссылку на объект из которого они вызваны.
 	// winAPI не знает о том какой у нас мембер -
 	// - поэтому для него используются static callback-и которые не имеют скрытых параметров
+public:
+	KeyBoard kbd;
+private:
+	int width;
+	int height;
 	HWND hWnd;
-
 };
 
 // error exception helper macro
