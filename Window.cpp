@@ -134,10 +134,19 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_CLOSE:
 		PostQuitMessage(0);
 		return 0;
-	/******************** KEYBOARD MESSAGES *************************/
-	case WM_KEYDOWN:
-		kbd.OnKeyPressed(static_cast<unsigned char>(wParam));
+	case WM_KILLFOCUS:
+		kbd.ClearState();
 		break;
+	/******************** KEYBOARD MESSAGES *************************/
+	case WM_SYSKEYDOWN:
+	// syskey commands need to be handled to track ALT key (VK_MENU)
+	case WM_KEYDOWN:
+		if (!(lParam & 0x40000000) || kbd.AutorepeatIsEnabled()) // только если мы сами позволяем делать повторные нажатия в играх слать сообщения о них иначе игнор
+		{
+			kbd.OnKeyPressed(static_cast<unsigned char>(wParam));
+		}
+		break;
+	case WM_SYSKEYUP:
 	case WM_KEYUP:
 		kbd.OnKeyReleased(static_cast<unsigned char>(wParam));
 	case WM_CHAR:
