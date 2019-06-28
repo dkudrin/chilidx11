@@ -81,6 +81,7 @@ Window::Window(int width, int height, const char* name)
 	}
 	// show window
 	ShowWindow(hWnd, SW_SHOWDEFAULT);
+	pGfx = std::make_unique<Graphics>(hWnd);
 }
 
 Window::~Window()
@@ -297,4 +298,9 @@ std::optional<int> Window::ProcessMessages()
 		DispatchMessage(&msg);
 	}
 	return {};
+}
+
+Graphics & Window::Gfx()
+{
+	return *pGfx;
 }

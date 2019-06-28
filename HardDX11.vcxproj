@@ -131,6 +131,7 @@
     <ClCompile Include="App.cpp" />
     <ClCompile Include="ChiliException.cpp" />
     <ClCompile Include="ChiliTimer.cpp" />
+    <ClCompile Include="Graphics.cpp" />
     <ClCompile Include="KeyBoard.cpp" />
     <ClCompile Include="Mouse.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -141,6 +142,7 @@
     <ClInclude Include="ChiliException.h" />
     <ClInclude Include="ChiliTimer.h" />
     <ClInclude Include="ChiliWin.h" />
+    <ClInclude Include="Graphics.h" />
     <ClInclude Include="KeyBoard.h" />
     <ClInclude Include="Mouse.h" />
     <ClInclude Include="resource.h" />
