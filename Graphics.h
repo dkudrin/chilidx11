@@ -1,9 +1,33 @@
 #pragma once
 #include "ChiliWin.h"
+#include "ChiliException.h"
 #include <d3d11.h>
 
 class Graphics
 {
+public:
+	class Exception : public ChiliException // base graphic exception
+	{
+		using ChiliException::ChiliException;
+	};
+	class HrException : public Exception // graphic exception that have HRESULT
+	{
+	public:
+		HrException(int line, const char * file, HRESULT hr);
+		const char * what() const override;
+		const char * GetType() const override;
+		HRESULT GetErrorCode() const;
+		std::string GetErrorString() const;
+		std::string GetErrorDescription() const;
+	private:
+		HRESULT hr;
+	};
+	class DeviceRemovedException : public HrException
+	{
+		using HrException::HrException;
+	public:
+		const char* GetType() const override;
+	};
 public:
 	Graphics(HWND hWnd);
 	Graphics(const Graphics&) = delete;

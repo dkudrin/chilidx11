@@ -89,6 +89,38 @@ Window::~Window()
 	DestroyWindow(hWnd);
 }
 
+void Window::SetTitle(const std::string& title)
+{
+	if (SetWindowText(hWnd, title.c_str()) == 0)
+	{
+		throw CHWND_LAST_EXCEPT();
+	}
+}
+
+std::optional<int> Window::ProcessMessages()
+{
+	MSG msg;
+	while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+	{
+		if (msg.message == WM_QUIT)
+		{
+			return msg.wParam;
+		}
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+	return {};
+}
+
+Graphics & Window::Gfx()
+{
+	if (!pGfx)
+	{
+		throw CHWND_NOGFX_EXCEPT();
+	}
+	return *pGfx;
+}
+
 LRESULT WINAPI Window::HandleMsgSetup(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	// use create parameter passed in form CreateWindow() to store window class pointer
@@ -221,32 +253,14 @@ LRESULT Window::HandleMsg(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
+
+/********************* EXCEPTIONS *****************************/
+
 // Window Exception Stuff
-Window::Exception::Exception(int line, const char * file, HRESULT hr) // Derived class constructor
-	:
-	ChiliException(line, file), // call base counstructor class
-	hr(hr) // set priveate var hr
-{}
-
-const char * Window::Exception::what() const
-{
-	std::ostringstream oss;
-	oss << GetType() << std::endl
-		<< "[Error Code] " << GetErrorCode() << std::endl
-		<< "[Description]" << GetErrorString() << std::endl
-		<< GetOriginString();
-	whatBuffer = oss.str();
-	return whatBuffer.c_str();
-}
-
-const char * Window::Exception::GetType() const
-{
-	return "Chili Widndow Eception";
-}
-
 std::string Window::Exception::TranslateErrorCode(HRESULT hr)
 {
 	char * pMsgBuf = nullptr;
+	// windows will allocate memory for err string and make our pointer point to it
 	DWORD nMsgLen = FormatMessage(
 		FORMAT_MESSAGE_ALLOCATE_BUFFER |
 		FORMAT_MESSAGE_FROM_SYSTEM |
@@ -258,49 +272,52 @@ std::string Window::Exception::TranslateErrorCode(HRESULT hr)
 		0,
 		nullptr
 	);
+	// 0 string length returned indicates a failure
 	if (nMsgLen == 0)
 	{
 		return "Unidentified error code";
 	}
+	// copy error string from windows-allocated buffer to std::string
 	std::string errorString = pMsgBuf;
+	// free windows buffer
 	LocalFree(pMsgBuf);
 	return errorString;
 }
 
-HRESULT Window::Exception::GetErrorCode() const
+Window::HrException::HrException(int line, const char * file, HRESULT hr) // Derived class constructor
+	:
+	Exception(line, file), // call base counstructor class
+	hr(hr) // set priveate var hr
+{}
+
+const char * Window::HrException::what() const
+{
+	std::ostringstream oss;
+	oss << GetType() << std::endl
+		<< "[Error Code] 0x" << std::hex << std::uppercase << GetErrorCode()
+		<< std::dec << " (" << (unsigned long)GetErrorCode() << ")" << std::endl
+		<< "[Description] " << GetErrorDescription() << std::endl
+		<< GetOriginString();
+	whatBuffer = oss.str();
+	return whatBuffer.c_str();
+}
+
+const char * Window::HrException::GetType() const
+{
+	return "Chili Widndow HrException";
+}
+
+HRESULT Window::HrException::GetErrorCode() const
 {
 	return hr;
 }
 
-std::string Window::Exception::GetErrorString() const
+std::string Window::HrException::GetErrorDescription() const
 {
-	return TranslateErrorCode(hr);
+	return Exception::TranslateErrorCode(hr);
 }
 
-void Window::SetTitle(const std::string& title)
+const char* Window::NoGfxException::GetType() const
 {
-	if (SetWindowText(hWnd, title.c_str()) == 0)
-	{
-		throw CHWND_LAST_EXCEPT();
-	}
-}
-
-std::optional<int> Window::ProcessMessages()
-{
-	MSG msg;
-	while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-	{
-		if (msg.message == WM_QUIT)
-		{
-			return msg.wParam;
-		}
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
-	return {};
-}
-
-Graphics & Window::Gfx()
-{
-	return *pGfx;
+	return "Chili Window Exception [No Graphics]";
 }
