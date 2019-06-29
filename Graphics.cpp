@@ -2,8 +2,9 @@
 #include "dxerr.h"
 #include <sstream>
 
-#pragma comment(lib, "d3d11.lib")
+namespace wrl = Microsoft::WRL;
 
+#pragma comment(lib, "d3d11.lib")
 
 // graphics exception checking/throwing macros (some with dxgi infos)
 #define GFX_EXCEPT_NOINFO(hr) Graphics::HrException( __LINE__,__FILE__,(hr) )
@@ -65,39 +66,18 @@ Graphics::Graphics(HWND hWnd)
 		&pContext //pp - Returns the address of a pointer to an ID3D11DeviceContext object that represents the device context. If this parameter is NULL, no ID3D11DeviceContext will be returned.
 	));
 	// gain access to texture subresource in swap chain (back buffer)
-	ID3D11Resource* pBackBuffer = nullptr;
+	wrl::ComPtr<ID3D11Resource> pBackBuffer;
 	GFX_THROW_INFO(pSwap->GetBuffer(
 		0, // index of the buffer, that we want to get. 0 - backbuffer
 		__uuidof(ID3D11Resource), // uuid of the interface that we want to recieve
-		reinterpret_cast<void**>(&pBackBuffer) // pp that we can use to fill our pointer
+		&pBackBuffer // pp that we can use to fill our pointer
 	));
 	// once we have a handler to device recource we can use it to create render target view on it
 	GFX_THROW_INFO(pDevice->CreateRenderTargetView(
-		pBackBuffer, // backbuffer
+		pBackBuffer.Get(), // backbuffer
 		nullptr, // additional options
 		&pTarget // pp to our target
 	));
-	pBackBuffer->Release();
-}
-
-Graphics::~Graphics()
-{
-	if (pTarget != nullptr)
-	{
-		pTarget->Release();
-	}
-	if (pContext != nullptr)
-	{
-		pContext->Release();
-	}
-	if (pSwap != nullptr)
-	{
-		pSwap->Release();
-	}
-	if (pDevice != nullptr)
-	{
-		pDevice->Release();
-	}
 }
 
 void Graphics::EndFrame()
@@ -126,7 +106,7 @@ void Graphics::EndFrame()
 void Graphics::ClearBuffer(float red, float green, float blue)
 {
 	const float color[] = { red, green, blue, 1.0f };
-	pContext->ClearRenderTargetView(pTarget, color);
+	pContext->ClearRenderTargetView(pTarget.Get(), color);
 }
 
 
