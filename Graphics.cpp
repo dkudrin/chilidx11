@@ -126,6 +126,7 @@ void Graphics::DrawTestTriangle()
 		float y;
 	};
 
+	// create vertex buffer (1 2d triangle at center of screen)
 	const Vertex vertices[] =
 	{
 		{ 0.0f, 0.5f },
@@ -220,7 +221,7 @@ void Graphics::DrawTestTriangle()
 	/*********** end create Pixel shader>*********************/
 
 	// bind render target
-	pContext->OMGetRenderTargets(1u, pTarget.GetAddressOf(), nullptr);
+	pContext->OMSetRenderTargets(1u, pTarget.GetAddressOf(), nullptr);
 
 	// configure viewport
 	D3D11_VIEWPORT viewport;
