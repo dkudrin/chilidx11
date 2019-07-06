@@ -118,8 +118,8 @@ void Graphics::ClearBuffer(float red, float green, float blue)
 void Graphics::DrawTestTriangle()
 {
 	HRESULT hr;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> pVertexBuffer;
 
+	/***********<create Vertex shader *********************/
 	struct Vertex
 	{
 		float x;
@@ -144,12 +144,13 @@ void Graphics::DrawTestTriangle()
 	D3D11_SUBRESOURCE_DATA subresData = {}; // Собственно данные для буффера
 	subresData.pSysMem = vertices; // !!! Загрузка данных вертекс буффера
 
+	Microsoft::WRL::ComPtr<ID3D11Buffer> pVertexBuffer;
 	GFX_THROW_INFO(pDevice->CreateBuffer(&vertexBufferDesc, &subresData, &pVertexBuffer));
 
 	// Bind vertex buffer to pipeline
 	const UINT stride = sizeof(Vertex);
 	const UINT offset = 0u;
-	pContext->IASetVertexBuffers(
+	pContext->IASetVertexBuffers( // Input Assemble Set Vertex Buffers
 		0u, // startSlot
 		1u, // first and one buffer
 		pVertexBuffer.GetAddressOf(),
@@ -193,13 +194,18 @@ void Graphics::DrawTestTriangle()
 		&pInputLayout
 	));
 
+	// bind vertex layout
+	pContext->IASetInputLayout(pInputLayout.Get());
+
 	// Set primitive topology to triangle list (groups of 3 vericies)
 	pContext->IASetPrimitiveTopology( // IA - InputAssembler
-		D3D11_PRIMITIVE_TOPOLOGY::D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST
+		D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST
 	);
 
+	/*********** end create Vertex shader>*********************/
 
-	// create pixel shader
+
+	/***********<create Pixel shader *********************/
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> pPixelShader;
 	Microsoft::WRL::ComPtr<ID3DBlob> pPixelShaderBlob; // byte blob
 	GFX_THROW_INFO(D3DReadFileToBlob(L"PixelShader.cso", &pPixelShaderBlob));
@@ -211,6 +217,7 @@ void Graphics::DrawTestTriangle()
 	));
 	// bind pixel shader
 	pContext->PSSetShader(pPixelShader.Get(), 0, 0);
+	/*********** end create Pixel shader>*********************/
 
 	// bind render target
 	pContext->OMGetRenderTargets(1u, pTarget.GetAddressOf(), nullptr);
