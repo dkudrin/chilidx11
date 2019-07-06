@@ -1,10 +1,12 @@
 #include "Graphics.h"
 #include "dxerr.h"
 #include <sstream>
+#include <d3dcompiler.h> // works with D3DCompiler.lib to load compiled shaders
 
 namespace wrl = Microsoft::WRL;
 
 #pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "D3DCompiler.lib") // For compiled HLSL shaders (.cso) loading
 
 // graphics exception checking/throwing macros (some with dxgi infos)
 #define GFX_EXCEPT_NOINFO(hr) Graphics::HrException( __LINE__,__FILE__,(hr) )
@@ -14,10 +16,12 @@ namespace wrl = Microsoft::WRL;
 #define GFX_EXCEPT(hr) Graphics::HrException( __LINE__,__FILE__,(hr),infoManager.GetMessages() )
 #define GFX_THROW_INFO(hrcall) infoManager.Set(); if( FAILED( hr = (hrcall) ) ) throw GFX_EXCEPT(hr)
 #define GFX_DEVICE_REMOVED_EXCEPT(hr) Graphics::DeviceRemovedException( __LINE__,__FILE__,(hr),infoManager.GetMessages() )
+#define GFX_THROW_INFO_ONLY(call) infoManager.Set(); (call); {auto v = infoManager.GetMessages(); if(!v.empty()) {throw Graphics::InfoException( __LINE__,__FILE__,v);}}
 #else
 #define GFX_EXCEPT(hr) Graphics::HrException( __LINE__,__FILE__,(hr) )
 #define GFX_THROW_INFO(hrcall) GFX_THROW_NOINFO(hrcall)
 #define GFX_DEVICE_REMOVED_EXCEPT(hr) Graphics::DeviceRemovedException(__LINE__, __FILE__, (hr))
+#define GFX_THROW_INFO_ONLY(call) (call)
 #endif
 
 Graphics::Graphics(HWND hWnd)
@@ -109,6 +113,121 @@ void Graphics::ClearBuffer(float red, float green, float blue)
 	pContext->ClearRenderTargetView(pTarget.Get(), color);
 }
 
+// function for clearing buffer with color
+
+void Graphics::DrawTestTriangle()
+{
+	HRESULT hr;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> pVertexBuffer;
+
+	struct Vertex
+	{
+		float x;
+		float y;
+	};
+
+	const Vertex vertices[] =
+	{
+		{ 0.0f, 0.5f },
+		{ 0.5f, -0.5f },
+		{ -0.5f, -0.5f }
+	};
+
+	D3D11_BUFFER_DESC vertexBufferDesc = {};
+	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	vertexBufferDesc.CPUAccessFlags = 0u;
+	vertexBufferDesc.MiscFlags = 0u;
+	vertexBufferDesc.ByteWidth = sizeof(vertices);
+	vertexBufferDesc.StructureByteStride = sizeof(Vertex);
+
+	D3D11_SUBRESOURCE_DATA subresData = {}; // Собственно данные для буффера
+	subresData.pSysMem = vertices; // !!! Загрузка данных вертекс буффера
+
+	GFX_THROW_INFO(pDevice->CreateBuffer(&vertexBufferDesc, &subresData, &pVertexBuffer));
+
+	// Bind vertex buffer to pipeline
+	const UINT stride = sizeof(Vertex);
+	const UINT offset = 0u;
+	pContext->IASetVertexBuffers(
+		0u, // startSlot
+		1u, // first and one buffer
+		pVertexBuffer.GetAddressOf(),
+		&stride,
+		&offset
+	);
+
+	// create vertex shader
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> pVertexShader;
+	Microsoft::WRL::ComPtr<ID3DBlob> pVertexShaderBlob; // byte blob
+	GFX_THROW_INFO(D3DReadFileToBlob(L"VertexShader.cso", &pVertexShaderBlob)); // use D3DCompiler.lib to load compiled shader
+	GFX_THROW_INFO(pDevice->CreateVertexShader(
+		pVertexShaderBlob->GetBufferPointer(), // pointer to the byteCode
+		pVertexShaderBlob->GetBufferSize(),
+		nullptr,
+		&pVertexShader
+	));
+	// bind vertex shader
+	pContext->VSSetShader(pVertexShader.Get(), nullptr, 0u);
+
+
+	// input (vertex) layout (2d position only)
+	Microsoft::WRL::ComPtr<ID3D11InputLayout> pInputLayout;
+	const D3D11_INPUT_ELEMENT_DESC inputElementDesc[] =
+	{
+		{
+			"Position", // должен совпадать с тем что указано как semantic name в параметрах hlsl функции
+			0,
+			DXGI_FORMAT_R32G32_FLOAT, // ничего с цветами не связано, просто 2 32битные float
+			0,
+			0,
+			D3D11_INPUT_PER_VERTEX_DATA,
+			0
+		},
+	};
+	GFX_THROW_INFO(pDevice->CreateInputLayout(
+		inputElementDesc,
+		(UINT)std::size(inputElementDesc),
+		pVertexShaderBlob->GetBufferPointer(), // pointer to the byteCode
+		pVertexShaderBlob->GetBufferSize(),
+		&pInputLayout
+	));
+
+	// Set primitive topology to triangle list (groups of 3 vericies)
+	pContext->IASetPrimitiveTopology( // IA - InputAssembler
+		D3D11_PRIMITIVE_TOPOLOGY::D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST
+	);
+
+
+	// create pixel shader
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> pPixelShader;
+	Microsoft::WRL::ComPtr<ID3DBlob> pPixelShaderBlob; // byte blob
+	GFX_THROW_INFO(D3DReadFileToBlob(L"PixelShader.cso", &pPixelShaderBlob));
+	GFX_THROW_INFO(pDevice->CreatePixelShader(
+		pPixelShaderBlob->GetBufferPointer(),
+		pPixelShaderBlob->GetBufferSize(),
+		nullptr,
+		&pPixelShader
+	));
+	// bind pixel shader
+	pContext->PSSetShader(pPixelShader.Get(), 0, 0);
+
+	// bind render target
+	pContext->OMGetRenderTargets(1u, pTarget.GetAddressOf(), nullptr);
+
+	// configure viewport
+	D3D11_VIEWPORT viewport;
+	viewport.Width = 800;
+	viewport.Height = 600;
+	viewport.MinDepth = 0;
+	viewport.MaxDepth = 1;
+	viewport.TopLeftX = 0;
+	viewport.TopLeftY = 0;
+	pContext->RSSetViewports(1u, &viewport); // Rasterizer - Stage set viewports
+
+	GFX_THROW_INFO_ONLY(pContext->Draw((UINT)std::size(vertices), 0u));
+}
+
 
 // Graphics exception stuff
 Graphics::HrException::HrException(int line, const char * file, HRESULT hr, std::vector<std::string> infoMsgs)
@@ -178,4 +297,42 @@ std::string Graphics::HrException::GetErrorInfo() const
 const char* Graphics::DeviceRemovedException::GetType() const
 {
 	return "Chili Graphics Exception [Device Removed] (DXGI_ERROR_DEVICE_REMOVED)";
+}
+
+Graphics::InfoException::InfoException(int line, const char * file, std::vector<std::string> infoMsgs) noexcept
+	:
+	Exception(line, file)
+{
+	// join all info messages with newlines into single string
+	for (const auto& m : infoMsgs)
+	{
+		info += m;
+		info.push_back('\n');
+	}
+	// remove final newline if exists
+	if (!info.empty())
+	{
+		info.pop_back();
+	}
+}
+
+
+const char* Graphics::InfoException::what() const noexcept
+{
+	std::ostringstream oss;
+	oss << GetType() << std::endl
+		<< "\n[Error Info]\n" << GetErrorInfo() << std::endl << std::endl;
+	oss << GetOriginString();
+	whatBuffer = oss.str();
+	return whatBuffer.c_str();
+}
+
+const char* Graphics::InfoException::GetType() const noexcept
+{
+	return "Chili Graphics Info Exception";
+}
+
+std::string Graphics::InfoException::GetErrorInfo() const noexcept
+{
+	return info;
 }
