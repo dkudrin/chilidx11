@@ -137,11 +137,13 @@ void Graphics::DrawTestTriangle()
 	};
 
 	// create vertex buffer (1 2d triangle at center of screen)
-	const Vertex vertices[] =	{
+	Vertex vertices[] =	{
 		{ 0.0f, 0.5f, 255, 0, 0, 0 },
 		{ 0.5f, -0.5f, 0, 255, 0, 0 },
 		{ -0.5f, -0.5f, 0, 0, 255, 0 }
 	};
+
+	vertices[0].color.g = 255;
 
 	D3D11_BUFFER_DESC vertexBufferDesc = {};
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
