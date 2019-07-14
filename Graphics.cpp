@@ -130,12 +130,10 @@ void Graphics::DrawTestTriangle()
 	const Vertex vertices[] =	{
 		{ 0.0f, 0.5f },
 		{ 0.5f, -0.5f },
+		{ 0.5f, -0.5f },
 		{ -0.5f, -0.5f },
-
-		{ 0.5f, 1.0f },
-		{ 1.0f, 0.5f },
-		{ 0.5f, 0.5f }
-
+		{ -0.5f, -0.5f },
+		{ 0.0f, 0.5f }
 	};
 
 	D3D11_BUFFER_DESC vertexBufferDesc = {};
@@ -204,7 +202,7 @@ void Graphics::DrawTestTriangle()
 
 	// Set primitive topology to triangle list (groups of 3 vericies)
 	pContext->IASetPrimitiveTopology( // IA - InputAssembler
-		D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST
+		D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_LINELIST
 	);
 
 	/*********** end create Vertex shader>*********************/
