@@ -127,11 +127,15 @@ void Graphics::DrawTestTriangle()
 	};
 
 	// create vertex buffer (1 2d triangle at center of screen)
-	const Vertex vertices[] =
-	{
+	const Vertex vertices[] =	{
 		{ 0.0f, 0.5f },
 		{ 0.5f, -0.5f },
-		{ -0.5f, -0.5f }
+		{ -0.5f, -0.5f },
+
+		{ 0.5f, 1.0f },
+		{ 1.0f, 0.5f },
+		{ 0.5f, 0.5f }
+
 	};
 
 	D3D11_BUFFER_DESC vertexBufferDesc = {};
@@ -178,13 +182,13 @@ void Graphics::DrawTestTriangle()
 	const D3D11_INPUT_ELEMENT_DESC inputElementDesc[] =
 	{
 		{
-			"Position", // должен совпадать с тем что указано как semantic name в параметрах hlsl функции
-			0,
-			DXGI_FORMAT_R32G32_FLOAT, // ничего с цветами не связано, просто 2 32битные float
-			0,
-			0,
-			D3D11_INPUT_PER_VERTEX_DATA,
-			0
+			"Position", // SemanticName - должен совпадать с тем что указано как semantic name в параметрах hlsl функции
+			0, // SemanticIndex
+			DXGI_FORMAT_R32G32_FLOAT, // Format - ничего с цветами не связано, просто 2 32битные float
+			0, // InputSlot
+			0, // AlignedByteOffset
+			D3D11_INPUT_PER_VERTEX_DATA, // InputSlotClass
+			0 // InstanceDataStepRate
 		},
 	};
 	GFX_THROW_INFO(pDevice->CreateInputLayout(
