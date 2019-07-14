@@ -122,12 +122,18 @@ void Graphics::DrawTestTriangle()
 	/***********<create Vertex shader *********************/
 	struct Vertex
 	{
-		float x;
-		float y;
-		unsigned char r;
-		unsigned char g;
-		unsigned char b;
-		unsigned char a;
+		struct
+		{
+			float x;
+			float y;
+		} pos;
+		struct
+		{
+			unsigned char r;
+			unsigned char g;
+			unsigned char b;
+			unsigned char a;
+		} color;
 	};
 
 	// create vertex buffer (1 2d triangle at center of screen)
