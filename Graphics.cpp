@@ -136,11 +136,14 @@ void Graphics::DrawTestTriangle()
 		} color;
 	};
 
-	// create vertex buffer (1 2d triangle at center of screen)
+	// create VERTEX buffer (1 2d triangle at center of screen)
 	Vertex vertices[] =	{
 		{ 0.0f, 0.5f, 255, 0, 0, 0 },
 		{ 0.5f, -0.5f, 0, 255, 0, 0 },
-		{ -0.5f, -0.5f, 0, 0, 255, 0 }
+		{ -0.5f, -0.5f, 0, 0, 255, 0 },
+		{ -0.3f, 0.3f, 0, 255, 0, 0 },
+		{ 0.3f, 0.3f, 0, 0, 255, 0 },
+		{ 0.0f, -0.8f, 255, 0, 0, 0 }
 	};
 
 	vertices[0].color.g = 255;
@@ -154,12 +157,12 @@ void Graphics::DrawTestTriangle()
 	vertexBufferDesc.StructureByteStride = sizeof(Vertex);
 
 	D3D11_SUBRESOURCE_DATA subresData = {}; // Собственно данные для буффера
-	subresData.pSysMem = vertices; // !!! Загрузка данных вертекс буффера
+	subresData.pSysMem = vertices; // !!! Загрузка данных VERTEX буффера
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> pVertexBuffer;
 	GFX_THROW_INFO(pDevice->CreateBuffer(&vertexBufferDesc, &subresData, &pVertexBuffer));
 
-	// Bind vertex buffer to pipeline
+	// Bind VERTEX buffer to pipeline
 	const UINT stride = sizeof(Vertex);
 	const UINT offset = 0u;
 	pContext->IASetVertexBuffers( // Input Assemble Set Vertex Buffers
@@ -170,7 +173,39 @@ void Graphics::DrawTestTriangle()
 		&offset
 	);
 
-	// create vertex shader
+	// create INDEX buffer
+	const unsigned short indices[] =
+	{
+		0, 1, 2,
+		0, 2, 3,
+		0, 4, 1,
+		2, 1, 5
+	};
+
+	D3D11_BUFFER_DESC indexBufferDesc = {};
+	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+
+	indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	indexBufferDesc.CPUAccessFlags = 0u;
+	indexBufferDesc.MiscFlags = 0u;
+	indexBufferDesc.ByteWidth = sizeof(vertices);
+	indexBufferDesc.StructureByteStride = sizeof(unsigned short);
+
+	D3D11_SUBRESOURCE_DATA indexBufferSubresData = {}; // Собственно данные для буффера
+	indexBufferSubresData.pSysMem = indices; // !!! Загрузка данных INDEX буффера
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> pIndexBuffer; // такой же тип данных как у pVertexBuffer
+	GFX_THROW_INFO(pDevice->CreateBuffer(&indexBufferDesc, &indexBufferSubresData, &pIndexBuffer));
+
+
+	// Bind INDEX buffer to pipeline
+	pContext->IASetIndexBuffer(
+		pIndexBuffer.Get(),
+		DXGI_FORMAT_R16_UINT, // 16 бит unsigned short
+		0u // offset
+	);
+
+	// create vertex SHADER
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> pVertexShader;
 	Microsoft::WRL::ComPtr<ID3DBlob> pVertexShaderBlob; // byte blob
 	GFX_THROW_INFO(D3DReadFileToBlob(L"VertexShader.cso", &pVertexShaderBlob)); // use D3DCompiler.lib to load compiled shader
@@ -253,7 +288,8 @@ void Graphics::DrawTestTriangle()
 	viewport.TopLeftY = 0;
 	pContext->RSSetViewports(1u, &viewport); // Rasterizer - Stage set viewports
 
-	GFX_THROW_INFO_ONLY(pContext->Draw((UINT)std::size(vertices), 0u));
+	// draw indexed
+	GFX_THROW_INFO_ONLY(pContext->DrawIndexed((UINT)std::size(indices), 0u, 0u));
 }
 
 
