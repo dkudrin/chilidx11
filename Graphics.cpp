@@ -114,6 +114,7 @@ void Graphics::ClearBuffer(float red, float green, float blue)
 	pContext->ClearRenderTargetView(pTarget.Get(), color);
 }
 
+
 // function for clearing buffer with color
 
 void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseY)
