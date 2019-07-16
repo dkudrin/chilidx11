@@ -292,7 +292,6 @@ void Graphics::DrawTestTriangle()
 	GFX_THROW_INFO_ONLY(pContext->DrawIndexed((UINT)std::size(indices), 0u, 0u));
 }
 
-
 // Graphics exception stuff
 Graphics::HrException::HrException(int line, const char * file, HRESULT hr, std::vector<std::string> infoMsgs)
 	:
