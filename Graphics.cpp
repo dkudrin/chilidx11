@@ -115,7 +115,7 @@ void Graphics::ClearBuffer(float red, float green, float blue)
 
 // function for clearing buffer with color
 
-void Graphics::DrawTestTriangle()
+void Graphics::DrawTestTriangle( float angle)
 {
 	HRESULT hr;
 
@@ -136,7 +136,7 @@ void Graphics::DrawTestTriangle()
 		} color;
 	};
 
-	// create VERTEX buffer (1 2d triangle at center of screen)
+	//>>> create VERTEX buffer (1 2d triangle at center of screen)
 	Vertex vertices[] =	{
 		{ 0.0f, 0.5f, 255, 0, 0, 0 },
 		{ 0.5f, -0.5f, 0, 255, 0, 0 },
@@ -173,7 +173,7 @@ void Graphics::DrawTestTriangle()
 		&offset
 	);
 
-	// create INDEX buffer
+	//>>> create INDEX buffer
 	const unsigned short indices[] =
 	{
 		0, 1, 2,
@@ -184,7 +184,6 @@ void Graphics::DrawTestTriangle()
 
 	D3D11_BUFFER_DESC indexBufferDesc = {};
 	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-
 	indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
 	indexBufferDesc.CPUAccessFlags = 0u;
 	indexBufferDesc.MiscFlags = 0u;
@@ -197,7 +196,6 @@ void Graphics::DrawTestTriangle()
 	Microsoft::WRL::ComPtr<ID3D11Buffer> pIndexBuffer; // такой же тип данных как у pVertexBuffer
 	GFX_THROW_INFO(pDevice->CreateBuffer(&indexBufferDesc, &indexBufferSubresData, &pIndexBuffer));
 
-
 	// Bind INDEX buffer to pipeline
 	pContext->IASetIndexBuffer(
 		pIndexBuffer.Get(),
@@ -205,7 +203,47 @@ void Graphics::DrawTestTriangle()
 		0u // offset
 	);
 
-	// create vertex SHADER
+	//>>> create CONSTANT buffer - матрица преобразований над каждым из вертексов,
+	// преобразовани€ будут производитьс€ над каждым из вертексов на отдельных €драх видеокарты
+	struct ConstantBuffer
+	{
+		struct
+		{
+			float element[4][4];
+		} tarnsformation;  // можно добавить больше различных констант в будущем
+	};
+
+	const ConstantBuffer constantBuffer =
+	{
+		{
+			(3.0f / 4.0f) * std::cos(angle),  std::sin(angle), 0.0f, 0.0f, // (3.0f / 4.0f) - необходимо чтобы убрать эффект раст€гивани€ объекта при вращении в раст€нутом 3 * 4 экране
+			(3.0f / 4.0f) * -std::sin(angle), std::cos(angle), 0.0f, 0.0f,
+			0.0f,             0.0f,            1.0f, 0.0f,
+			0.0f,             0.0f,            0.0f, 1.0f
+		}
+	};
+
+	D3D11_BUFFER_DESC constantBufferDesc = {};
+	constantBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	constantBufferDesc.Usage = D3D11_USAGE_DYNAMIC; // dynamic - allows the use of the Lock function. It is also possible to update with UpdateSubresource on a non-dynamic
+	constantBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; // разрешить процессору запись в буффер каждый фрейм
+	constantBufferDesc.MiscFlags = 0u;
+	constantBufferDesc.ByteWidth = sizeof(constantBuffer);
+	constantBufferDesc.StructureByteStride = 0u;
+
+	D3D11_SUBRESOURCE_DATA constantBufferSubresData = {};
+	constantBufferSubresData.pSysMem = &constantBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> pConstantBuffer;
+	GFX_THROW_INFO(pDevice->CreateBuffer(&constantBufferDesc, &constantBufferSubresData, &pConstantBuffer));
+
+	// bind constant buffer to vertex shader - ему ну нужно быть прив€занным к input assembler ему нужно быть прив€занным к шейдеру который будет его использовать
+	pContext->VSSetConstantBuffers(
+		0u, // с какого начать буффера
+		1u, // сколько создаем буфферов
+		pConstantBuffer.GetAddressOf()
+	);
+
+	//>>> create vertex SHADER
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> pVertexShader;
 	Microsoft::WRL::ComPtr<ID3DBlob> pVertexShaderBlob; // byte blob
 	GFX_THROW_INFO(D3DReadFileToBlob(L"VertexShader.cso", &pVertexShaderBlob)); // use D3DCompiler.lib to load compiled shader
@@ -219,7 +257,7 @@ void Graphics::DrawTestTriangle()
 	pContext->VSSetShader(pVertexShader.Get(), nullptr, 0u);
 
 
-	// input (vertex) layout (2d position only)
+	//>>> input (vertex) layout (2d position only)
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> pInputLayout;
 	const D3D11_INPUT_ELEMENT_DESC inputElementDesc[] =
 	{
