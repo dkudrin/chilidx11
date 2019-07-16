@@ -2,8 +2,9 @@
 #include "dxerr.h"
 #include <sstream>
 #include <d3dcompiler.h> // works with D3DCompiler.lib to load compiled shaders
+#include <DirectXMath.h>
 
-namespace wrl = Microsoft::WRL;
+namespace dx = DirectX;
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "D3DCompiler.lib") // For compiled HLSL shaders (.cso) loading
@@ -70,7 +71,7 @@ Graphics::Graphics(HWND hWnd)
 		&pContext //pp - Returns the address of a pointer to an ID3D11DeviceContext object that represents the device context. If this parameter is NULL, no ID3D11DeviceContext will be returned.
 	));
 	// gain access to texture subresource in swap chain (back buffer)
-	wrl::ComPtr<ID3D11Resource> pBackBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Resource> pBackBuffer;
 	GFX_THROW_INFO(pSwap->GetBuffer(
 		0, // index of the buffer, that we want to get. 0 - backbuffer
 		__uuidof(ID3D11Resource), // uuid of the interface that we want to recieve
@@ -207,19 +208,16 @@ void Graphics::DrawTestTriangle( float angle)
 	// преобразовани€ будут производитьс€ над каждым из вертексов на отдельных €драх видеокарты
 	struct ConstantBuffer
 	{
-		struct
-		{
-			float element[4][4];
-		} tarnsformation;  // можно добавить больше различных констант в будущем
+		dx::XMMATRIX transform; // 4x4 float matrix, but all methods of it are optimized for SIMD (много операций за один цикл работы процессора)
 	};
 
 	const ConstantBuffer constantBuffer =
 	{
 		{
-			(3.0f / 4.0f) * std::cos(angle),  std::sin(angle), 0.0f, 0.0f, // (3.0f / 4.0f) - необходимо чтобы убрать эффект раст€гивани€ объекта при вращении в раст€нутом 3 * 4 экране
-			(3.0f / 4.0f) * -std::sin(angle), std::cos(angle), 0.0f, 0.0f,
-			0.0f,             0.0f,            1.0f, 0.0f,
-			0.0f,             0.0f,            0.0f, 1.0f
+			dx::XMMatrixMultiply(
+				dx::XMMatrixRotationZ(angle),
+				dx::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f) // убираем эффект раст€гивани€ изображени€ при повороте из-за пропорций экрана
+			)
 		}
 	};
 
