@@ -26,7 +26,13 @@ void App::DoFrame()
 	const float c = sin(timer.Peek()) / 2.0f + 0.5f; // random color value generation for buffer texture clearing
 	wnd.Gfx().ClearBuffer(c, c, 1.0f);
 	float angle = timer.Peek(); // используем time.Peek чтобы увеличивать значения angle со временем
-	wnd.Gfx().DrawTestTriangle(angle);
+	float mouseX = (wnd.mouse.GetPosX() / 400.0f) - 1.0f;
+	float mouseY = -((wnd.mouse.GetPosY() / 300.0f) - 1.0f);
+	wnd.Gfx().DrawTestTriangle(
+		angle,
+		mouseX,
+		mouseY
+	);
 	wnd.Gfx().EndFrame();
 	// contain the top level of our game logic
 	//const float t = timer.Peek();

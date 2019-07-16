@@ -116,7 +116,7 @@ void Graphics::ClearBuffer(float red, float green, float blue)
 
 // function for clearing buffer with color
 
-void Graphics::DrawTestTriangle( float angle)
+void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseY)
 {
 	HRESULT hr;
 
@@ -216,7 +216,8 @@ void Graphics::DrawTestTriangle( float angle)
 		{
 			dx::XMMatrixTranspose( // Транспонируем матрицу перед передачей на видеокарту
 				dx::XMMatrixRotationZ(angle) * // вращаем вертексы переданный угол
-				dx::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f) // убираем эффект растягивания изображения при повороте из-за пропорций экрана
+				dx::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f) * // убираем эффект растягивания изображения при повороте из-за пропорций экрана
+				dx::XMMatrixTranslation((3.0f / 4.0f) * mouseX, mouseY, 0.0f) // translation - следование за мышкой
 			)
 		}
 	};
