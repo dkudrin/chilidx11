@@ -214,7 +214,10 @@ void Graphics::DrawTestTriangle( float angle)
 	const ConstantBuffer constantBuffer =
 	{
 		{
-			dx::XMMatrixRotationZ(angle) * dx::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f) // убираем эффект растягивания изображения при повороте из-за пропорций экрана
+			dx::XMMatrixTranspose( // Транспонируем матрицу перед передачей на видеокарту
+				dx::XMMatrixRotationZ(angle) * // вращаем вертексы переданный угол
+				dx::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f) // убираем эффект растягивания изображения при повороте из-за пропорций экрана
+			)
 		}
 	};
 

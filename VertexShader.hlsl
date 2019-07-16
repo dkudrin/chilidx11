@@ -6,9 +6,7 @@ struct VertexShaderOutput
 
 cbuffer ConstantBuffer
 {
-    row_major matrix transformMatrix; // keyword "matrix" indicates 4x4 float matrix
-    // row_major нужен для того чтобы на CPU и GPU матрицы обрабатывались одинаково (ибо изначально они обрабатываются по-разному - GPU воспринимает матрицу в транспонированном виде)
-    // позже мы сделаем транспонирование на GPU
+    matrix transformMatrix; // keyword "matrix" indicates 4x4 float matrix
 };
 
 VertexShaderOutput main(float2 pos : Position, float3 color : Color)
