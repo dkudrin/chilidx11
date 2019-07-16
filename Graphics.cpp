@@ -83,6 +83,59 @@ Graphics::Graphics(HWND hWnd)
 		nullptr, // additional options
 		&pTarget // pp to our target
 	));
+
+	// Создание z-Buffer-а который поможет позиционировать объекты один за другим
+	// В directX zBuffer делит пространство с stancil буффером. Они похожи. Оба являются масками.
+	// Но depth маска работает только с глубиной
+	// stencil используется для создания рализичных масок - зеркала, порталы и прочее
+	D3D11_DEPTH_STENCIL_DESC depthStancilDesc = {};
+	depthStancilDesc.DepthEnable = TRUE;
+	depthStancilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	depthStancilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> pDepthStancilState;
+	GFX_THROW_INFO(pDevice->CreateDepthStencilState(
+		&depthStancilDesc,
+		&pDepthStancilState
+	));
+
+	// bind depth state
+	pContext->OMSetDepthStencilState(pDepthStancilState.Get(), 1u);
+
+	// create depth stencil texture
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> pDepthStencilTexture;
+	D3D11_TEXTURE2D_DESC depthDesc = {};
+	depthDesc.Width = 800u;
+	depthDesc.Height = 600u;
+	depthDesc.MipLevels = 1u;
+	depthDesc.ArraySize = 1u;
+	depthDesc.Format = DXGI_FORMAT_D32_FLOAT; // D32 - depth
+	depthDesc.SampleDesc.Count = 1u; // AntiAliasing
+	depthDesc.SampleDesc.Quality = 0u;
+	depthDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	GFX_THROW_INFO(pDevice->CreateTexture2D( // мы ни чем не заполняем текстуру, так как она будет заполняться каждый фрейм with depth information
+		&depthDesc,
+		nullptr,
+		&pDepthStencilTexture
+	));
+
+	// create view of depth stencil texture
+	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
+	depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	depthStencilViewDesc.Texture2D.MipSlice = 0u;
+	GFX_THROW_INFO(pDevice->CreateDepthStencilView(
+		pDepthStencilTexture.Get(),
+		&depthStencilViewDesc,
+		&pDepthStencilView
+	));
+
+	// bind depth stencil view to pipeline (OM -узнать что обозначет эта аббревиатура)
+	pContext->OMSetRenderTargets(
+		1u,
+		pTarget.GetAddressOf(),
+		pDepthStencilView.Get()
+	);
 }
 
 void Graphics::EndFrame()
@@ -112,12 +165,18 @@ void Graphics::ClearBuffer(float red, float green, float blue)
 {
 	const float color[] = { red, green, blue, 1.0f };
 	pContext->ClearRenderTargetView(pTarget.Get(), color);
+	pContext->ClearDepthStencilView( // очистка depth view -  иначе экран будет пустым
+		pDepthStencilView.Get(),
+		D3D11_CLEAR_DEPTH,
+		1.0f,
+		0u
+	);
 }
 
 
 // function for clearing buffer with color
 
-void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseY)
+void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseZ)
 {
 	HRESULT hr;
 
@@ -214,7 +273,7 @@ void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseY)
 			dx::XMMatrixTranspose( // Транспонируем матрицу перед передачей на видеокарту
 				dx::XMMatrixRotationZ(angle) * // вращаем вертексы переданный угол
 				dx::XMMatrixRotationX(angle) * // вращаем вертексы переданный угол по z - чтобы видеть другие стороны куба
-				dx::XMMatrixTranslation(mouseX, mouseY, 4.0f) * // translation - следование за мышкой - TODO выяснить что такое 4.0f скорее всего zoomout от экрана
+				dx::XMMatrixTranslation(mouseX, 0.0f, mouseZ + 4.0f) * // translation - следование за мышкой - TODO выяснить что такое 4.0f скорее всего zoomout от экрана
 				dx::XMMatrixPerspectiveLH( 1.0f, 3.0f / 4.0f, 0.5f, 10.0f) // !!! рендеринг проекции на экран - TODO выяснить, это есть 3d fundamentals
 			)
 		}
@@ -342,9 +401,6 @@ void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseY)
 	// bind pixel shader
 	pContext->PSSetShader(pPixelShader.Get(), 0, 0);
 	/*********** end create Pixel shader>*********************/
-
-	// bind render target
-	pContext->OMSetRenderTargets(1u, pTarget.GetAddressOf(), nullptr);
 
 	// configure viewport
 	D3D11_VIEWPORT viewport;

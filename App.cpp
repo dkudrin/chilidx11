@@ -28,8 +28,13 @@ void App::DoFrame()
 	float angle = timer.Peek(); // используем time.Peek чтобы увеличивать значения angle со временем
 	float mouseX = (wnd.mouse.GetPosX() / 400.0f) - 1.0f;
 	float mouseY = -((wnd.mouse.GetPosY() / 300.0f) - 1.0f);
-	wnd.Gfx().DrawTestTriangle(
+	wnd.Gfx().DrawTestTriangle( // back trinagle
 		angle,
+		0.0f,
+		0.0f
+	);
+	wnd.Gfx().DrawTestTriangle( // front triangle
+		-angle,
 		mouseX,
 		mouseY
 	);
