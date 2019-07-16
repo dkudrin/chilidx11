@@ -130,28 +130,19 @@ void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseY)
 			float y;
 			float z;
 		} pos;
-		struct
-		{
-			unsigned char r;
-			unsigned char g;
-			unsigned char b;
-			unsigned char a;
-		} color;
 	};
 
 	//>>> create VERTEX buffer (1 2d triangle at center of screen)
 	Vertex vertices[] =	{
-		{ -1.0f, -1.0f, -1.0f,    255, 0,   0    },
-		{  1.0f, -1.0f, -1.0f,    0,   255, 0    },
-		{ -1.0f,  1.0f, -1.0f,    0,   0,   255  },
-		{  1.0f,  1.0f, -1.0f,    255, 0,   255  },
-		{ -1.0f, -1.0f,  1.0f,    255, 0,   255  },
-		{  1.0f, -1.0f,  1.0f,    0,   255, 255  },
-	    { -1.0f,  1.0f,  1.0f,    0,   0,   0    },
-		{  1.0f,  1.0f,  1.0f,    255, 255, 255  }
+		{ -1.0f, -1.0f, -1.0f },
+		{  1.0f, -1.0f, -1.0f },
+		{ -1.0f,  1.0f, -1.0f },
+		{  1.0f,  1.0f, -1.0f },
+		{ -1.0f, -1.0f,  1.0f },
+		{  1.0f, -1.0f,  1.0f },
+	    { -1.0f,  1.0f,  1.0f },
+		{  1.0f,  1.0f,  1.0f }
 	};
-
-	vertices[0].color.g = 255;
 
 	D3D11_BUFFER_DESC vertexBufferDesc = {};
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
@@ -249,6 +240,48 @@ void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseY)
 		pConstantBuffer.GetAddressOf()
 	);
 
+	struct FaceColorsConstantBuffer
+	{
+		struct
+		{
+			float r;
+			float g;
+			float b;
+			float a;
+		} face_colors[6];
+	};
+
+	const FaceColorsConstantBuffer faceColorsConstantBuffer = {
+		{
+			{ 1.0f, 0.0f, 1.0f },
+			{ 1.0f, 0.0f, 0.0f },
+			{ 0.0f, 1.0f, 0.0f },
+			{ 0.0f, 0.0f, 1.0f },
+			{ 1.0f, 1.0f, 0.0f },
+			{ 0.0f, 1.0f, 1.0f }
+		}
+	};
+
+	D3D11_BUFFER_DESC faceColorsConstantBufferDesc = {};
+	faceColorsConstantBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	faceColorsConstantBufferDesc.Usage = D3D11_USAGE_DYNAMIC; // dynamic - allows the use of the Lock function. It is also possible to update with UpdateSubresource on a non-dynamic
+	faceColorsConstantBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; // разрешить процессору запись в буффер каждый фрейм
+	faceColorsConstantBufferDesc.MiscFlags = 0u;
+	faceColorsConstantBufferDesc.ByteWidth = sizeof(faceColorsConstantBuffer);
+	faceColorsConstantBufferDesc.StructureByteStride = 0u;
+
+	D3D11_SUBRESOURCE_DATA faceColorsConstantBufferSubresData = {};
+	faceColorsConstantBufferSubresData.pSysMem = &faceColorsConstantBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> pFaceColorsConstantBuffer;
+	GFX_THROW_INFO(pDevice->CreateBuffer(&faceColorsConstantBufferDesc, &faceColorsConstantBufferSubresData, &pFaceColorsConstantBuffer));
+
+	// bind constant buffer to PIXEL shader
+	pContext->PSSetConstantBuffers(
+		0u, // с какого начать буффера
+		1u, // сколько создаем буфферов
+		pFaceColorsConstantBuffer.GetAddressOf()
+	);
+
 	//>>> create vertex SHADER
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> pVertexShader;
 	Microsoft::WRL::ComPtr<ID3DBlob> pVertexShaderBlob; // byte blob
@@ -275,15 +308,6 @@ void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseY)
 			0, // AlignedByteOffset
 			D3D11_INPUT_PER_VERTEX_DATA, // InputSlotClass
 			0 // InstanceDataStepRate
-		},
-		{
-			"Color",
-			0,
-			DXGI_FORMAT_R8G8B8A8_UNORM,
-			0,
-			12u, // должен совпадать с форматом Postion
-			D3D11_INPUT_PER_VERTEX_DATA,
-			0
 		}
 	};
 	GFX_THROW_INFO(pDevice->CreateInputLayout(
