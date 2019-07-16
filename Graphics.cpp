@@ -128,6 +128,7 @@ void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseY)
 		{
 			float x;
 			float y;
+			float z;
 		} pos;
 		struct
 		{
@@ -140,12 +141,14 @@ void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseY)
 
 	//>>> create VERTEX buffer (1 2d triangle at center of screen)
 	Vertex vertices[] =	{
-		{ 0.0f, 0.5f, 255, 0, 0, 0 },
-		{ 0.5f, -0.5f, 0, 255, 0, 0 },
-		{ -0.5f, -0.5f, 0, 0, 255, 0 },
-		{ -0.3f, 0.3f, 0, 255, 0, 0 },
-		{ 0.3f, 0.3f, 0, 0, 255, 0 },
-		{ 0.0f, -0.8f, 255, 0, 0, 0 }
+		{ -1.0f, -1.0f, -1.0f,    255, 0,   0    },
+		{  1.0f, -1.0f, -1.0f,    0,   255, 0    },
+		{ -1.0f,  1.0f, -1.0f,    0,   0,   255  },
+		{  1.0f,  1.0f, -1.0f,    255, 0,   255  },
+		{ -1.0f, -1.0f,  1.0f,    255, 0,   255  },
+		{  1.0f, -1.0f,  1.0f,    0,   255, 255  },
+	    { -1.0f,  1.0f,  1.0f,    0,   0,   0    },
+		{  1.0f,  1.0f,  1.0f,    255, 255, 255  }
 	};
 
 	vertices[0].color.g = 255;
@@ -178,10 +181,12 @@ void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseY)
 	//>>> create INDEX buffer
 	const unsigned short indices[] =
 	{
-		0, 1, 2,
-		0, 2, 3,
-		0, 4, 1,
-		2, 1, 5
+		0, 2, 1,  2, 3, 1,
+		1, 3, 5,  3, 7, 5,
+		2, 6, 3,  3, 6, 7,
+		4, 5, 7,  4, 7, 6,
+		0, 4, 2,  2, 4, 6,
+		0, 1, 4,  1, 5, 4
 	};
 
 	D3D11_BUFFER_DESC indexBufferDesc = {};
@@ -217,8 +222,9 @@ void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseY)
 		{
 			dx::XMMatrixTranspose( // “ранспонируем матрицу перед передачей на видеокарту
 				dx::XMMatrixRotationZ(angle) * // вращаем вертексы переданный угол
-				dx::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f) * // убираем эффект раст€гивани€ изображени€ при повороте из-за пропорций экрана
-				dx::XMMatrixTranslation((3.0f / 4.0f) * mouseX, mouseY, 0.0f) // translation - следование за мышкой
+				dx::XMMatrixRotationX(angle) * // вращаем вертексы переданный угол по z - чтобы видеть другие стороны куба
+				dx::XMMatrixTranslation(mouseX, mouseY, 4.0f) * // translation - следование за мышкой - TODO вы€снить что такое 4.0f скорее всего zoomout от экрана
+				dx::XMMatrixPerspectiveLH( 1.0f, 3.0f / 4.0f, 0.5f, 10.0f) // !!! рендеринг проекции на экран - TODO вы€снить, это есть 3d fundamentals
 			)
 		}
 	};
@@ -264,7 +270,7 @@ void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseY)
 		{
 			"Position", // SemanticName - должен совпадать с тем что указано как semantic name в параметрах hlsl функции
 			0, // SemanticIndex
-			DXGI_FORMAT_R32G32_FLOAT, // Format - ничего с цветами не св€зано, просто 2 32битные float
+			DXGI_FORMAT_R32G32B32_FLOAT, // Format - ничего с цветами не св€зано, просто 2 32битные float
 			0, // InputSlot
 			0, // AlignedByteOffset
 			D3D11_INPUT_PER_VERTEX_DATA, // InputSlotClass
@@ -275,7 +281,7 @@ void Graphics::DrawTestTriangle( float angle, float mouseX, float mouseY)
 			0,
 			DXGI_FORMAT_R8G8B8A8_UNORM,
 			0,
-			8u,
+			12u, // должен совпадать с форматом Postion
 			D3D11_INPUT_PER_VERTEX_DATA,
 			0
 		}
